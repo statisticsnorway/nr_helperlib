@@ -1,16 +1,21 @@
-# \<repo-navn>
-Beskriv hva repoet inneholder.
+# nr_helperlib
 
-## Hvorfor er ikke dette repoet public?
-Denne overskriften og tilhørende avsnitt slettes hvis repoet er public.
 
-I følge [Retningslinjer for åpen kildekode i SSB](https://github.com/statisticsnorway/adr/blob/main/docs/0006-aapen-kildekode-i-ssb.md)
-gjelder følgende:
 
-> "All kode i SSB skal som standard være allment tilgjengelig (åpen kildekode). Det
-gjøres unntak for kode som beskriver SSB spesifikke infrastrukturdetaljer,
-konfigurasjon av applikasjoner og annen kode som teamet vurderer til å ikke være åpen
-grunnet sikkerhetsmessige risikoer. ... Kodelagre som vurderes til ikke å være åpne
-skal ha et avsnitt i README hvor beslutningen begrunnes så konkret som mulig."
+Created by: Benedikt Goodman <benedikt.goodman@ssb.no>
 
-\<Begrunnelse for hvorfor dette repoet ikke er public>
+---
+
+## What is this repo?
+Helper functions for treatment of time series and more. Still under development.
+
+Includes tools for aggregation and disaggregation of time series based on FAME's functionalities for timeseries. It also contains a lookup-function that yields product-, recipient and industry codes used in national account system.
+
+For a short intro on functionalities and required libraries for operation of functions, see the readme files inside each function folder.
+
+Currently these functions work best in the administrative zone, but the plan is to better integrate them with the production zone in the future so it can be connected to the production zone and dapla.
+
+## Where are things located
+All functions and classes reside in the src folder. Currently the repo features:
+- data_import_tools which is a selection of elements that simplify import of data
+- ts_tools which is will one day do many of the things FAME does for us today.
