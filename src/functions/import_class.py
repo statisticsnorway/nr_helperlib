@@ -8,8 +8,8 @@ Created on Wed Jan 25 10:53:37 2023
 
 import pandas as pd
 
-from import_helpers import simple_importer
-from logic_helpers import check_listinput
+from src.functions.import_helpers import simple_importer
+from src.functions.logic_helpers import check_listinput
 
 from tqdm import tqdm
 
@@ -49,25 +49,7 @@ class DataImporter():
 
         return self
 
-    # Should this maybe be generalised?
-    def EnergiregnskapSubsetter(self, year=None, year_col='aar_added'):
-        """Method for filtering out all years aside from desired year from energiregnskapet."""
 
-        if year is None:
-            print('Please define which iteration of energiregnskapet you want to use \n',
-                  'Hint: It should be the latest version')
-
-        # Write dictionary with data as local variable
-        df_dict = self.folder_dict
-
-        # Extract energiregnskapet from desired year as new dataframe
-        __energiregnskapet = df_dict[str(year)]['energiregnskapet_' + str(year) + '.sas7bdat'].copy()
-        __energiregnskapet['filename'] = 'energiregnskapet_' + str(year) + '.sas7bdat'
-
-        # Write changed dictionary to object variables
-        self.energiregnskapet = __energiregnskapet
-
-        return self
 
     def add_years(self):
         """Method adds years to every dataframe in nested dictionary.
@@ -192,8 +174,9 @@ Hint:
         return self
 
     def __add_energiregnskapet(self):
+        # Add in
         self.sorted_dataframes['energiregnskapet'] = self.energiregnskapet
-
+        
         return self
 
 
@@ -257,16 +240,20 @@ Hint:
             Dictionary containing dataframe. Variable of ImportClass.
 
         sort_by : 'list or str', optional
-            DESCRIPTION. The default is None.
+            Values to sort dataframe by. The default is None.
 
         Returns
         -------
         sorted_dataframes : dict
             Writes dictionary to class memory.
         """
-
-        self.sorted_dataframes = {
-
+        # Extract subset where columns sortedby are not present
+        _exempt_dfs = {
+            key: df for key, df in self.sorted_dataframes.items()
+            if not all(item in df.columns for item in sort_by)
+        }
+        # Dfs where columns sorted by are present
+        _sorted_dfs = {
             # Sorts dataframes in dict by values
             key: df.sort_values(sort_by) for key, df 
             in self.sorted_dataframes.items() 
@@ -275,8 +262,44 @@ Hint:
             if all(item in df.columns for item in sort_by)
         }
 
+        # Add extempt to sorted
+        _sorted_dfs.update(_exempt_dfs)
+        
+        if self.sorted_dataframes.keys() == _sorted_dfs.keys() is False:
+            msg = [
+                'Warning!',
+                'sort_df method accidentally removed some dataframes.',
+                'The following dataframes were eliminated:']
+            print(' '.join(msg))
+            [key for key in _sorted_dfs if key not in self.sorted_dataframes.keys()]
+        
+        self.sorted_dataframes = _sorted_dfs
+
         return self
 
+    # Should this maybe be generalised?
+    def subset_years(self, df_name=None, year_col='aar', start_year=2010, stop_year=None):
+        """Method for filtering out all years aside from desired year from energiregnskapet."""
+
+        if df_name is None:
+            print('Please define which dataframe you want to subset. Hint: it is one of the names you defined in dataset_list.')
+
+        # Write dictionary with data as local variable
+        __subset_df = self.sorted_dataframes[df_name].copy(deep=True)
+    
+        # Subset dataframe with energiregnskapet to only contain data between 
+        # start_year and last_year
+        __subset_df = (__subset_df.loc[
+                                (__subset_df[year_col] >= start_year) &
+                                (__subset_df[year_col] <= stop_year)
+            ]
+        )
+        
+        # Write changed dictionary to object variables
+        self.sorted_dataframes[df_name] = __subset_df
+
+        return self
+    
     # Output module
     def write_data(self, output_object: str = 'folder_dict'):
         """Write dictionary inside object memory as variable"""

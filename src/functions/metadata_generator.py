@@ -9,10 +9,9 @@ Created: 02.12.2022
 import os
 import pandas as pd
 
-from logic_helpers import check_listinput
-from import_helpers import file_finder
-from utility_module import input_argument_none_eliminator
-
+from src.functions.logic_helpers import check_listinput
+from src.functions.utility_module import input_argument_none_eliminator
+from src.functions.import_helpers import file_finder
 
 class FolderSearcher():
     """
@@ -69,36 +68,7 @@ class FolderSearcher():
         self.start_year = int(input('Start year for data import:'))
         self.stop_year = int(input('Last year for data import:'))
 
-    def read_folder(self):
-        """
-        Identify files in a given subfolder, save them to tuple.
-
-        Returns
-        -------
-        self._ of_folders : tuple
-            Tuple of folders inside specified directory.
-
-        Raises
-        -------
-        ValueError: When input filepath from user doesnt exist.
-            Python will not provide user with useful feedback otherwise
-            (there's no string for this type of error it seems.)
-        """
-        try:
-            self.list_of_folders = (
-                file for file in os.listdir(self.path) 
-                if os.path.isfile(self.path + '/' + file)
-            )
-
-        # Catches non-existing paths ...yields cryptic feedback otherwise
-        except StopIteration:
-            raise ValueError('Input path does not exist.')
-
-        [string.lower() for string in self.list_of_folders]
-
-        return self.list_of_folders
-
-    def read_subfolders(self):
+    def read_folders(self):
         """
         Identifies subfolders present in chosen directory.
         Makes tuple of said subfolders.
