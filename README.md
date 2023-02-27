@@ -7,7 +7,7 @@ Created by: Benedikt Goodman <benedikt.goodman@ssb.no>
 ---
 
 ## What is this repo?
-Simply put, it is a bunch of functions mean to simplify working with national accounts. As such it contains elements that do many of things we repeat endlessly in our production programs (data i/o, filtering, joining, simple operations with numpy). 
+Simply put, it is a bunch of functions mean to simplify working with national accounts. As such it contains elements that do many of things we repeat endlessly in our production programs (data i/o, filtering, joining, simple matrix operations with numpy). 
 
 Includes tools for aggregation and disaggregation of time series based on FAME's functionalities for timeseries.
 

@@ -236,7 +236,7 @@ class FolderSearcher():
                 in target_iterable.str.split(sep)]
 
 
-    def __generate_metadata_df(self):
+    def __trigger_datareaders(self):
         """
         Generate pandas dataframe containing filenames, directory and path
 
@@ -293,7 +293,7 @@ class FolderSearcher():
             The method returns self so it can be chained.
 
         """
-        self.__generate_metadata_df()
+        self.__trigger_datareaders()
 
         return self
 
