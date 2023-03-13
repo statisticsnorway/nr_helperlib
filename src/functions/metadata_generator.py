@@ -6,12 +6,18 @@ Created: 02.12.2022
 
 """
 
+from pathlib import Path
 import os
 import pandas as pd
+from pprint import pprint
+
+
+# Import type hints
+from typing import List, Callable
 
 from src.functions.logic_helpers import check_listinput
 from src.functions.utility_module import input_argument_none_eliminator
-from src.functions.import_helpers import file_finder
+from src.functions.import_helpers import file_finder, check_files
 
 class FolderSearcher():
     """
@@ -19,12 +25,11 @@ class FolderSearcher():
     set of search terms and datatype criteria.
     """
 
-    def __init__(self, filepath:str,
-                 dataset_list:list = None,
-                 datatype: str = None,
-                 use_numeric_folders: bool = True,
-                 list_check_func:'function' = check_listinput
-                 ):
+    def __init__(self, filepath: str,
+                dataset_list:list[str] = None,
+                datatype: str = None,
+                use_numeric_folders: bool = True,
+                list_check_func: Callable = check_listinput):
         """
         Initalisation function accepting class attributes.
 
@@ -53,12 +58,15 @@ class FolderSearcher():
             errors.
         """
         # Typecheck for type, lenght and content of dataset_list
-        list_check_func(dataset_list, 'dataset_list')
+        #list_check_func(dataset_list, 'dataset_list')
 
         # Filepath = directory where sub-folders with data exists.
         self.path = str(filepath)
-        self.dataset_list = [str(item).lower() for item in dataset_list]
-        self.datatype = str(datatype)
+
+        if isinstance(dataset_list, list):
+            self.dataset_list = [str(item).lower() for item in dataset_list]
+        
+        self.datatype = datatype
         self.use_numeric_folders = bool(use_numeric_folders)
 
         # Variables to store metadata, and imported files
@@ -67,7 +75,28 @@ class FolderSearcher():
         # user defined input variables
         self.start_year = int(input('Start year for data import:'))
         self.stop_year = int(input('Last year for data import:'))
+        
+    def set_parameters_multifolder_search(self,
+        dataset_list:list[str] = None,
+        datatype: str = None,
+        use_numeric_folders: bool = True,
+        list_check_func: Callable = check_listinput):
+        
+        if isinstance(dataset_list, list):
+            self.dataset_list = [str(item).lower() for item in dataset_list]
+        
+        self.datatype = datatype
+        self.use_numeric_folders = bool(use_numeric_folders)
 
+        # Variables to store metadata, and imported files
+        self.list_of_folders = ()
+
+        # user defined input variables
+        self.start_year = int(input('Start year for data import:'))
+        self.stop_year = int(input('Last year for data import:'))
+        
+        return self
+        
     def read_folders(self):
         """
         Identifies subfolders present in chosen directory.
@@ -236,7 +265,7 @@ class FolderSearcher():
                 in target_iterable.str.split(sep)]
 
 
-    def __trigger_datareaders(self):
+    def __generate_metadata_df(self):
         """
         Generate pandas dataframe containing filenames, directory and path
 
@@ -278,6 +307,70 @@ class FolderSearcher():
             )
 
         return self.metadata_df
+    
+    @staticmethod
+    def search_single_folder(path:str, search_terms: list[str] = None,
+                         file_finder_func: Callable = file_finder) -> pd.DataFrame:
+        """
+        Searches for files in a single folder that match the given search terms.
+
+        Parameters
+        ----------
+        path : str
+            The path to the folder to be searched.
+
+        search_terms : list of str, optional
+            A list of search terms to filter the files. If not provided, all files
+            in the folder will be returned.
+
+        file_finder_func : Callable, optional
+            A function that takes a folder path and a list of search terms, and returns a list
+            of filenames that match the search terms. If not provided, the default `file_finder`
+            function will be used.
+
+        Returns
+        -------
+        pandas.DataFrame
+            A dataframe containing the filepaths, filenames, and directory name for each file
+            that matches the search terms.
+        """
+    
+        # Input checks
+        if isinstance(path, str) is False:
+            error_msg = ['path must be of type str',
+                         f'path given was of type: {type(path)}']
+            raise TypeError(error_msg)
+
+        elif isinstance(search_terms, list) is False:
+            error_msg = ['search_terms must be a list',
+                         f'search_term given was of type: {type(search_terms)}']
+            raise TypeError(' '.join(error_msg))
+
+        # Search terms inputs are strings
+        [str(term) for term in search_terms]
+
+        # Define path as pathlib object
+        path = Path(str(path))
+
+        # Get all filenames
+        files = check_files(path)
+
+        # Get filtered filesnames
+        filtered_files = file_finder_func(path, filter_clauses=search_terms)
+
+        # Get filepaths as list of strings
+        filepaths = [file.absolute().as_posix() for file in files 
+                     if file.name.lower() in filtered_files]
+
+        # Get filenames list of strings
+        filenames = [file.name.lower() for file in files 
+                     if file.name.lower() in filtered_files]
+
+        # Get file directory as list of strings
+        foldername = [path.name for file in filepaths]
+
+        return pd.DataFrame(data=list(zip(filepaths, filenames, foldername)), 
+                          columns=['path', 'filename', 'directory'])
 
     def generate_metadata(self):
         """
@@ -293,7 +386,7 @@ class FolderSearcher():
             The method returns self so it can be chained.
 
         """
-        self.__trigger_datareaders()
+        self.__generate_metadata_df()
 
         return self
 
@@ -333,7 +426,7 @@ class FolderSearcher():
         subset = self.metadata_df.loc[
             (self.metadata_df[group_col].str.contains('|'.join(groups))) &
             (self.metadata_df[val_col].str.contains('|'.join(keep_vals)))
-            ]
+        ]
 
         # Drops what we dont want from output df
         self.metadata_df = (
@@ -344,7 +437,59 @@ class FolderSearcher():
         self.metadata_df = pd.concat([self.metadata_df, subset])
 
         return self
+    
+    def subset_energiregnskapet(self) -> pd.DataFrame:
+        """
+        Subsets the metadata dataframe to include only files related to a specific year of 'energiregnskapet'.
 
+        Parameters
+        ----------
+        self : object
+            The instance of the class on which this method operates.
+
+        Returns
+        -------
+        self : object
+            The modified instance of the class, with the metadata dataframe subsetted as described above.
+        """
+        prompt = ['Which year of energiregnskapet do you want to use for this',
+                  'program?',
+                  '(It should be the latest version released):']
+        
+        # Raises issue if energiregnskapet is not present
+        if any(
+            self.metadata_df['filename'].str.contains('energiregnskapet')
+        ) is False:
+            error_msg = ['"energiregnskapet" is not present in identified files.',
+                         'Please include it as your search terms before',
+                         'attempting to subset a given year from it.',
+                         '\n You can see which files have been identified by using',
+                         'the .output_df() method']
+            raise ValueError(' '.join(error_msg))
+
+        # Prompts user for input
+        year = input(' '.join(prompt))
+
+        # Filters out desired subset by column, groups and values
+        er_subset = self.metadata_df.loc[
+            (self.metadata_df['filename'].str.contains('|'.join(['energiregnskapet']))) &
+            (self.metadata_df['directory'].str.contains('|'.join([year])))
+        ]
+
+        # Drops what we dont want from output df
+        self.metadata_df = (
+            self.metadata_df.loc[
+                ~self.metadata_df['filename'].str.contains(
+                    '|'.join(['energiregnskapet'])
+                )]
+            )
+
+        # Sticks what we want on output df
+        self.metadata_df = pd.concat([self.metadata_df, er_subset])
+
+        return self
+
+    
     def output_df(self):
         """Outputs metadata_df as dataframe"""
         return self.metadata_df.sort_values('filename')

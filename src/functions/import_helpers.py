@@ -11,15 +11,11 @@ import pandas as pd
 import numpy as np
 
 
-def check_files(path):
-    """Checks if files found by listdir are files, if they are,
-    appends them to list"""
-    file_list = []
-    for file in os.listdir(path):
-        if os.path.isfile(os.path.join(path, str(file))):
-            file_list.append(file)
-    return file_list
-
+def check_files(path: str) -> list:
+    """Checks if files found at path are files. If they are the function yields
+    filenames as list of pathlib path objects"""
+    
+    return [f for f in Path(path).iterdir() if f.is_file()]
 
 def file_finder(folder_path: str,
                 filter_clauses: str = None):
