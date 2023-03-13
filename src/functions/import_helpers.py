@@ -9,7 +9,10 @@ Created on Dec 01 10:34:18 2022
 import os
 import pandas as pd
 import numpy as np
+from pathlib import Path
 
+# Import type hints
+from typing import List, Callable
 
 def check_files(path: str) -> list:
     """Checks if files found at path are files. If they are the function yields
@@ -18,7 +21,8 @@ def check_files(path: str) -> list:
     return [f for f in Path(path).iterdir() if f.is_file()]
 
 def file_finder(folder_path: str,
-                filter_clauses: str = None):
+                filter_clauses: list[str]= None,
+                file_checker: Callable = check_files):
     """
     Searches for sub-strings in filenames a given folder and produces a list of
     filenames that matches patterns
@@ -47,10 +51,13 @@ def file_finder(folder_path: str,
 
     else: 
         filter_clauses = [str(n).lower() for n in filter_clauses]
+        
+        # Generate list of pathlib path objects
+        pathlib_filepaths = file_checker(folder_path)
 
         # Get all files in folder as list
-        all_files = check_files(folder_path)
-
+        all_files = [file.name for file in pathlib_filepaths]
+        
         # Turn all_files into a series
         all_files = pd.Series(all_files, dtype=str).str.lower()
 
@@ -157,7 +164,7 @@ def simple_importer(df:'pd.Dataframe',
         # Change column names i df columns for df inside nested dict w 3 levels
         data_dict = {
             folder_name: {
-                file_name: df.rename(columns=lambda x: x.lower(), inplace=False) 
+                file_name: (df.rename(columns = lambda x: x.lower(), inplace=False))
                        for file_name, df in folder_dict.items()
                        } 
             for folder_name, folder_dict in data_dict.items()
